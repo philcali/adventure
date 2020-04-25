@@ -1,0 +1,3 @@
+[submodule "vendor/melonJS"]
+	path = vendor/melonJS
+	url = https://github.com/melonjs/melonJS.git
