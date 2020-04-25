@@ -1,6 +1,6 @@
-*.js
+infrastructure/**/*.js
 !jest.config.js
-*.d.ts
+infrastructure/**/*.d.ts
 node_modules
 dist
 
@@ -8,6 +8,6 @@ dist
 .cdk.staging
 cdk.out
 
-# Parcel build directories
+# t Parcel build directories
 .cache
 .build
