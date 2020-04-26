@@ -88,7 +88,9 @@ const PlayerEntity = me.Entity.extend({
     this.body.vel.x = 0;
     if (this.isStationary() && !this.isStandingAttack && !this.renderable.isCurrentAnimation("stand")) {
       this.renderable.setCurrentAnimation("stand");
+      return true;
     }
+    return false;
   },
 
   takeHit: function() {
@@ -100,7 +102,9 @@ const PlayerEntity = me.Entity.extend({
         return false;
       });
       this.renderable.setAnimationFrame();
+      return true;
     }
+    return false;
   },
 
   walk: function(left) {
@@ -108,7 +112,7 @@ const PlayerEntity = me.Entity.extend({
     this.renderable.flipX(left);
     let multiplier = left ? -1 : 1;
     this.body.vel.x = multiplier * this.body.maxVel.x * me.timer.tick;
-    this.doConditionalRender(this.isOnTheGround(), "walk", true);
+    return this.doConditionalRender(this.isOnTheGround(), "walk", true);
   },
 
   isStationary: function() {
@@ -121,7 +125,9 @@ const PlayerEntity = me.Entity.extend({
         return repeat || false;
       });
       this.renderable.setAnimationFrame();
+      return true;
     }
+    return false;
   },
 
   createSwordAttack: function() {
@@ -145,6 +151,7 @@ const PlayerEntity = me.Entity.extend({
       });
       this.renderable.setAnimationFrame();
     });
+    return true;
   },
 
   airAttack: function() {
@@ -155,19 +162,21 @@ const PlayerEntity = me.Entity.extend({
       return false;
     });
     this.renderable.setAnimationFrame();
+    return true;
   },
 
   /**
    * update the entity
    */
   update: function(dt) {
+    let frameUpdate = false;
     if (!this.takingDamaage) {
       if (me.input.isKeyPressed("left") && !this.isStandingAttack) {
-        this.walk(true);
+        frameUpdate = this.walk(true) || frameUpdate;
       } else if (me.input.isKeyPressed("right") && !this.isStandingAttack) {
-        this.walk(false);
+        frameUpdate = this.walk(false) || frameUpdate;
       } else {
-        this.stand();
+        frameUpdate = this.stand() || frameUpdate;
       }
 
       if (this.isOnTheGround() && this.isJumpingAttack) {
@@ -183,14 +192,15 @@ const PlayerEntity = me.Entity.extend({
 
       if (me.input.isKeyPressed("attack")) {
         if (this.isOnTheGround()) {
-          this.groundAttack();
+          frameUpdate = this.groundAttack() || frameUpdate;
         } else if (!this.isOnTheGround()) {
-          this.airAttack();
+          frameUpdate = this.airAttack() || frameUpdate;
         }
       }
 
-      this.doConditionalRender(this.body.jumping && !this.isJumpingAttack, "jump");
-      this.doConditionalRender(this.body.falling && !this.isJumpingAttack, "fall");
+      frameUpdate = this.doConditionalRender(this.body.jumping && !this.isJumpingAttack, "jump")
+        || this.doConditionalRender(this.body.falling && !this.isJumpingAttack, "fall")
+        || frameUpdate;
     }
 
     // apply physics to the body (this moves the entity)
@@ -200,7 +210,7 @@ const PlayerEntity = me.Entity.extend({
     me.collision.check(this);
 
     // return true if we moved or if the renderable was updated
-    return (this._super(me.Entity, 'update', [dt]) || this.body.vel.x !== 0 || this.body.vel.y !== 0);
+    return (this._super(me.Entity, 'update', [dt]) || frameUpdate || this.body.vel.x !== 0 || this.body.vel.y !== 0);
   },
 
  /**
