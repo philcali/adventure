@@ -1,4 +1,5 @@
-const COOL_DOWN = (me.sys.fps / 20) * 5;
+const COOL_DOWN = 400;
+const LINE_OF_SIGHT = 160;
 
 const SkeletonAttack = me.Entity.extend({
   init: function(x, y, settings) {
@@ -33,7 +34,7 @@ const Skeleton = me.Entity.extend({
     this.anchorPoint.set(-0.8, -0.4);
     this.isKinematic = false;
 
-    var frames = 0;
+    let frames = 0;
     this.renderable.addAnimation("death", [frames++, frames++, frames++, frames++, frames++, frames++]);
     this.renderable.addAnimation("hit", [frames++, frames++, frames++], 150);
     this.renderable.addAnimation("stand", [frames++, frames++, frames++], 200);
@@ -54,8 +55,10 @@ const Skeleton = me.Entity.extend({
 
     this.mainPlayer = null;
     this.faceLeft = true;
-    this.takingDamage = false;
-    this.coolDown = COOL_DOWN;
+    this.coolDown = {
+      duration: 0,
+      isCooling: false
+    };
     this.recordedAttack = null;
     this.isAttacking = false;
     this.faceRight = true;
@@ -63,37 +66,85 @@ const Skeleton = me.Entity.extend({
   },
 
   swapToMoveable: function() {
+    this.isAttacking = false;
     this.anchorPoint.set(-0.8, -0.4);
     this.renderable = this.movementRenderable;
-    this.isAttacking = false;
   },
 
-  doHit: function(recordedAttack) {
+  swapToAttack: function() {
+    this.isAttacking = true;
+    this.anchorPoint.set(this.faceRight ? 0.7 : 0, 0.1);
+    this.renderable = this.attackRenderable;
+  },
+
+  requireCooldown: function(duration = COOL_DOWN) {
+    this.coolDown = {
+      duration,
+      isCooling: duration > 0
+    };
+  },
+
+  takeHit: function(recordedAttack) {
     if (recordedAttack !== this.recordedAttack) {
       this.recordedAttack = recordedAttack;
       this.health -= recordedAttack.hitPower;
-      this.takingDamage = true;
-      this.coolDown = COOL_DOWN;
+      this.requireCooldown();
       this.swapToMoveable();
       this.renderable.flicker(200);
       if (this.health <= 0) {
         this.alive = false;
-        this.renderable.setCurrentAnimation("death", (function() {
+        this.renderable.setCurrentAnimation("death", () => {
           me.game.world.removeChild(this);
           return false;
-        }).bind(this));
+        });
       } else {
-        this.renderable.setCurrentAnimation("hit", (function() {
-          this.takingDamage = false;
+        this.renderable.setCurrentAnimation("hit", () => {
           return false;
-        }).bind(this));
+        });
       }
     }
   },
 
-  doConditionalRender: function(condition, action) {
+  attack: function() {
+    this.swapToAttack();
+    this.renderable.setCurrentAnimation("startAttack2", () => {
+      this.createSwordAttack();
+      this.renderable.setCurrentAnimation("attack2", () => {
+        this.swapToMoveable();
+        this.requireCooldown();
+        this.renderable.setCurrentAnimation("stand");
+        return false;
+      });
+      this.renderable.setAnimationFrame();
+    });
+    this.renderable.setAnimationFrame();
+  },
+
+  conditionalRender: function(condition, action) {
     if (condition && !this.renderable.isCurrentAnimation(action)) {
       this.renderable.setCurrentAnimation(action);
+    }
+  },
+
+  createSwordAttack: function() {
+    let attack = me.pool.pull('enemySlashAttack',
+      this.pos.x + (this.faceRight ? 0 : -25),
+      this.pos.y,
+      { width: 50, height: 20, source: this });
+    me.game.world.addChild(attack);
+    return attack;
+  },
+
+  checkAndWalk: function(left, distance) {
+    this.faceRight = !left;
+    this.renderable.flipX(left);
+    this.attackRenderable.flipX(left);
+    if (distance > this.attackDistance && distance < LINE_OF_SIGHT) {
+      let multipler = left ? -1 : 1;
+      this.body.vel.x = this.body.vel.x + (multipler * this.body.maxVel.x * me.timer.tick);
+      this.conditionalRender(true, "walk");
+    } else {
+      this.body.vel.x = 0;
     }
   },
 
@@ -102,49 +153,24 @@ const Skeleton = me.Entity.extend({
       this.mainPlayer = me.game.world.getChildByProp("name", "mainPlayer")[0];
     }
 
-    // left
-    if (!this.isAttacking && !this.takingDamage && this.coolDown-- <= 0) {
+    // cooldown or be aggro
+    if (this.coolDown.isCooling) {
+      this.coolDown.duration -= dt;
+      if (this.coolDown.duration <= 0) {
+        this.coolDown.isCooling = false;
+      }
+    } else if (this.alive && !this.isAttacking) {
+      let headLeft = true;
+      let distance = this.mainPlayer.pos.distance(this.pos);
       if (this.mainPlayer.pos.x < this.pos.x) {
-        this.faceRight = false;
-        this.renderable.flipX(true);
-        this.attackRenderable.flipX(true);
-        if (this.mainPlayer.pos.distance(this.pos) > this.attackDistance) {
-          this.body.vel.x -= this.body.maxVel.x * me.timer.tick;
-          this.doConditionalRender(true, "walk");
-        } else {
-          this.body.vel.x = 0;
-        }
+        this.checkAndWalk(headLeft, distance);
       } else if (this.mainPlayer.pos.x > this.pos.x) {
-        this.faceRight = true;
-        this.renderable.flipX(false);
-        this.attackRenderable.flipX(false);
-        if (this.mainPlayer.pos.distance(this.pos) > this.attackDistance) {
-          this.body.vel.x += this.body.maxVel.x * me.timer.tick;
-          this.doConditionalRender(true, "walk");
-        } else {
-          this.body.vel.x = 0;
-        }
+        this.checkAndWalk(!headLeft, distance);
       }
 
-      if (this.body.vel.x === 0 && !this.isAttacking) {
-        this.isAttacking = true;
-        this.anchorPoint.set(this.faceRight ? 0.7 : 0, 0.1);
-        this.renderable = this.attackRenderable;
-        this.renderable.setCurrentAnimation("startAttack2", (function() {
-          var attack = me.pool.pull('enemySlashAttack',
-            this.pos.x + (this.faceRight ? 0 : -25),
-            this.pos.y,
-            { width: 50, height: 20, source: this });
-          me.game.world.addChild(attack);
-          this.renderable.setCurrentAnimation("attack2", (function() {
-            this.swapToMoveable();
-            return false;
-          }).bind(this));
-          this.renderable.setAnimationFrame();
-        }).bind(this));
-        this.renderable.setAnimationFrame();
+      if (distance <= this.attackDistance && this.body.vel.x === 0) {
+        this.attack();
       }
-      // this.doConditionalRender(this.body.vel.x === 0, "stand");
     }
     this.body.update(dt);
     me.collision.check(this);
@@ -153,7 +179,7 @@ const Skeleton = me.Entity.extend({
 
   onCollision: function(resp, other) {
     if (resp.b.body.collisionType === me.collision.types.PROJECTILE_OBJECT) {
-      this.doHit(other);
+      this.takeHit(other);
     }
     if (resp.b.body.collisionType === me.collision.types.PLAYER_OBJECT) {
       resp.overlapV.x = 0;

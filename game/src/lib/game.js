@@ -6,6 +6,8 @@ import PlayScreen from './screens/play';
 import { PlayerEntity, SwordAttack } from './entities/player';
 import { Skeleton, SkeletonAttack } from './entities/enemies/skeleton';
 
+import 'melonjs/plugins/debug/debugPanel';
+
 /* Game namespace */
 const game = {
 
@@ -32,6 +34,7 @@ const game = {
     me.loader.preload(resources, this.loaded.bind(this));
 
     // me.debug.renderHitBox = true;
+    // me.debug.renderVelocity = true;
   },
 
   // Run on game resources loaded.
