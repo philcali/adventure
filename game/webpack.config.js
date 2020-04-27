@@ -8,9 +8,6 @@ module.exports = {
   entry: './src/index.js',
   plugins: [
     new CleanWebpackPlugin(),
-    new CopyPlugin([
-      { from: 'public', to: '.' }
-    ]),
     new MiniCssExtractPlugin(),
     new HtmlWebpackPlugin({
       title: "Adventure Game",
@@ -22,6 +19,17 @@ module.exports = {
   },
   module: {
     rules: [
+      {
+        test: /resources\.json/,
+        use: [
+          {
+            loader: path.resolve('loaders/resources.js'),
+            options: {
+              root: path.resolve('public')
+            }
+          }
+        ]
+      },
       {
         test: /\.css$/,
         use: [

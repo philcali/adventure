@@ -1,0 +1,18 @@
+{
+  "files": [{
+    "src": ["data/bgm/**/*", "data/sfx/**/*"],
+    "type": "audio"
+  },{
+    "src": ["data/img/**/*.png"],
+    "type": "image"
+  },{
+    "src": ["data/img/**/*.json"],
+    "type": "json"
+  },{
+    "src": ["data/map/**/*.tmx", "data/map/**/*.json"],
+    "type": "tmx"
+  },{
+    "src": ["data/map/**/*.tsx"],
+    "type": "tsx"
+  }]
+}

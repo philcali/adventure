@@ -1,4 +1,4 @@
-import resources from './resources';
+import resources from './resources.json';
 // Screens
 import TitleScreen from './screens/title';
 import PlayScreen from './screens/play';
