@@ -77,7 +77,12 @@ const PlayerEntity = me.Entity.extend({
     this.takingDamaage = false;
     this.strength = 10;
 
-    me.game.viewport.follow(this, me.game.viewport.AXIS.BOTH, 0.2);
+    me.input.bindKey(me.input.KEY.A, "left");
+    me.input.bindKey(me.input.KEY.D, "right");
+    me.input.bindKey(me.input.KEY.J, "attack", true);
+    me.input.bindKey(me.input.KEY.K, "jump", true);
+
+    me.game.viewport.follow(this, me.game.viewport.AXIS.BOTH, 0.4);
   },
 
   isOnTheGround: function() {

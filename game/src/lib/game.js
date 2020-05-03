@@ -2,6 +2,7 @@ import resources from './resources.json';
 // Screens
 import TitleScreen from './screens/title';
 import PlayScreen from './screens/play';
+import CustomLoadingScreen from './screens/loading';
 // Entities
 import { PlayerEntity, SwordAttack } from './entities/player';
 import { Skeleton, SkeletonAttack } from './entities/enemies/skeleton';
@@ -29,11 +30,12 @@ const game = {
     // Initialize the audio.
     me.audio.init("mp3,ogg");
 
+    me.state.set(me.state.LOADING, new CustomLoadingScreen());
     // set and load all resources.
     // (this will also automatically switch to the loading screen)
     me.loader.preload(resources, this.loaded.bind(this));
 
-    // me.debug.renderHitBox = true;
+    me.debug.renderHitBox = true;
     // me.debug.renderVelocity = true;
   },
 
@@ -47,13 +49,10 @@ const game = {
     me.pool.register("basicSkeleton", Skeleton);
     me.pool.register("attackSword", SwordAttack);
     me.pool.register("enemySlashAttack", SkeletonAttack);
-    me.input.bindKey(me.input.KEY.A, "left");
-    me.input.bindKey(me.input.KEY.D, "right");
-    me.input.bindKey(me.input.KEY.J, "attack", true);
-    me.input.bindKey(me.input.KEY.K, "jump", true);
 
     // Start the game.
-    me.state.change(me.state.PLAY);
+    me.state.transition("fade", '#000', 250);
+    me.state.change(me.state.MENU);
   }
 };
 
