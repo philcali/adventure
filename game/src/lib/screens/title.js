@@ -29,8 +29,8 @@ const TitleScreen = me.Stage.extend({
         },
 
         draw: function(renderer) {
-          this.font.draw(renderer, "Untitled Adventure Game", 250, 150);
-          this.font.draw(renderer, "Press Enter", 285, 250);
+          this.font.draw(renderer, "Untitled Adventure Game", 260, 150);
+          this.font.draw(renderer, "Press Enter", 290, 250);
         }
       })), 10);
 

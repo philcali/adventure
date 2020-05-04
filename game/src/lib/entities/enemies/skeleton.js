@@ -145,6 +145,7 @@ const Skeleton = me.Entity.extend({
       this.conditionalRender(true, "walk");
     } else {
       this.body.vel.x = 0;
+      this.conditionalRender(!this.isAttacking, "stand");
     }
   },
 

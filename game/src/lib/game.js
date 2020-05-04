@@ -36,11 +36,15 @@ const game = {
     me.loader.preload(resources, this.loaded.bind(this));
 
     me.debug.renderHitBox = true;
-    // me.debug.renderVelocity = true;
+    me.debug.renderVelocity = true;
   },
 
   // Run on game resources loaded.
   "loaded" : function () {
+    // TODO: feels like a hack... rebind debug key
+    if (me.plugins.debugPanel) {
+      me.plugins.debugPanel.panel.debugToggle = me.input.KEY.V;
+    }
     me.state.set(me.state.MENU, new TitleScreen());
     me.state.set(me.state.PLAY, new PlayScreen());
 
